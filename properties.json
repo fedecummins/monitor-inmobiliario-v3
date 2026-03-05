@@ -1,0 +1,21 @@
+{
+  "last_updated": "2026-03-05T08:00:00",
+  "meta": {
+    "zones": ["Vicente López", "Florida", "La Lucila", "San Isidro"],
+    "price_min_usd": 250000,
+    "price_max_usd": 350000,
+    "types": ["casa", "ph", "terreno", "galpon", "deposito"]
+  },
+  "stats": {
+    "total": 0,
+    "new_today": 0,
+    "removed_today": 0,
+    "price_changes": 0,
+    "avg_price_usd": 0,
+    "avg_price_per_m2": 0
+  },
+  "new_today": [],
+  "removed_today": [],
+  "price_changes": [],
+  "all_properties": []
+}

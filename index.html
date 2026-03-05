@@ -1,0 +1,826 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Monitor Inmobiliario — GBA Norte</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet" />
+<style>
+  /* ── TOKENS ─────────────────────────────────────── */
+  :root {
+    --ink:       #0f1117;
+    --ink-2:     #2a2e3a;
+    --ink-3:     #5a6070;
+    --paper:     #f5f2eb;
+    --paper-2:   #ede9e0;
+    --paper-3:   #e3ddd1;
+    --accent:    #c2440e;
+    --accent-2:  #e05a1a;
+    --gold:      #b8860b;
+    --green:     #2d6a4f;
+    --green-bg:  #d8f3dc;
+    --red:       #c1121f;
+    --red-bg:    #ffe5e5;
+    --amber:     #b45309;
+    --amber-bg:  #fef3c7;
+    --border:    #d5cfc3;
+    --shadow:    rgba(15,17,23,0.08);
+    --r:         6px;
+    --r-lg:      12px;
+  }
+
+  /* ── RESET ──────────────────────────────────────── */
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  html { scroll-behavior: smooth; }
+  body {
+    font-family: 'DM Sans', sans-serif;
+    background: var(--paper);
+    color: var(--ink);
+    font-size: 15px;
+    line-height: 1.6;
+    min-height: 100vh;
+  }
+
+  /* ── NOISE TEXTURE ──────────────────────────────── */
+  body::before {
+    content: '';
+    position: fixed; inset: 0;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.04'/%3E%3C/svg%3E");
+    pointer-events: none; z-index: 0;
+    opacity: .5;
+  }
+
+  /* ── MASTHEAD ───────────────────────────────────── */
+  .masthead {
+    background: var(--ink);
+    color: var(--paper);
+    padding: 0;
+    position: sticky; top: 0; z-index: 100;
+    border-bottom: 3px solid var(--accent);
+  }
+  .masthead-inner {
+    max-width: 1200px; margin: 0 auto;
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 14px 24px;
+    gap: 16px;
+  }
+  .brand {
+    display: flex; align-items: baseline; gap: 10px;
+  }
+  .brand-dot {
+    display: inline-block; width: 10px; height: 10px;
+    border-radius: 50%; background: var(--accent);
+    animation: pulse 2s ease-in-out infinite;
+    flex-shrink: 0; margin-bottom: 1px;
+  }
+  @keyframes pulse {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50% { opacity: .5; transform: scale(.8); }
+  }
+  .brand-title {
+    font-family: 'DM Serif Display', serif;
+    font-size: 1.25rem; letter-spacing: .01em;
+    color: var(--paper);
+  }
+  .brand-title em { color: var(--accent-2); font-style: normal; }
+  .brand-subtitle {
+    font-size: .75rem; color: #8a8fa0; letter-spacing: .08em;
+    text-transform: uppercase; font-weight: 500;
+  }
+  .masthead-meta {
+    display: flex; align-items: center; gap: 20px;
+    font-size: .75rem; color: #8a8fa0;
+  }
+  .live-badge {
+    display: flex; align-items: center; gap: 6px;
+    background: rgba(194,68,14,.15); border: 1px solid rgba(194,68,14,.4);
+    color: #e07a55; padding: 4px 10px; border-radius: 20px;
+    font-size: .7rem; font-weight: 600; letter-spacing: .06em; text-transform: uppercase;
+  }
+  .live-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--accent-2); animation: pulse 1.5s infinite; }
+  #last-update { font-family: 'DM Mono', monospace; font-size: .72rem; color: #666c80; }
+
+  /* ── HERO STATS BAR ─────────────────────────────── */
+  .stats-bar {
+    background: var(--ink-2);
+    border-bottom: 1px solid #2e3240;
+  }
+  .stats-bar-inner {
+    max-width: 1200px; margin: 0 auto;
+    display: grid; grid-template-columns: repeat(6, 1fr);
+    padding: 0 24px;
+  }
+  .stat-cell {
+    padding: 14px 16px;
+    border-right: 1px solid #2e3240;
+    text-align: center;
+  }
+  .stat-cell:last-child { border-right: none; }
+  .stat-value {
+    font-family: 'DM Serif Display', serif;
+    font-size: 1.6rem; color: var(--paper);
+    line-height: 1.1;
+  }
+  .stat-value.green { color: #5ecb88; }
+  .stat-value.red   { color: #f07070; }
+  .stat-value.amber { color: #f0b860; }
+  .stat-label {
+    font-size: .68rem; color: #666c80; letter-spacing: .07em;
+    text-transform: uppercase; margin-top: 2px; font-weight: 500;
+  }
+
+  /* ── MAIN LAYOUT ────────────────────────────────── */
+  .container { max-width: 1200px; margin: 0 auto; padding: 28px 24px 60px; }
+
+  /* ── SECTION HEADERS ────────────────────────────── */
+  .section-header {
+    display: flex; align-items: baseline; justify-content: space-between;
+    margin-bottom: 16px; padding-bottom: 10px;
+    border-bottom: 2px solid var(--ink);
+  }
+  .section-title {
+    font-family: 'DM Serif Display', serif;
+    font-size: 1.3rem;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .section-count {
+    font-family: 'DM Mono', monospace;
+    font-size: .75rem; color: var(--ink-3);
+    font-weight: 400;
+  }
+  .section-tag {
+    display: inline-block; font-size: .65rem;
+    padding: 2px 8px; border-radius: 20px;
+    font-weight: 600; letter-spacing: .06em; text-transform: uppercase;
+  }
+  .tag-new  { background: var(--green-bg);  color: var(--green); }
+  .tag-down { background: var(--red-bg);    color: var(--red); }
+  .tag-chg  { background: var(--amber-bg);  color: var(--amber); }
+  .tag-all  { background: var(--paper-3);   color: var(--ink-2); }
+
+  /* ── FILTERS BAR ────────────────────────────────── */
+  .filters-row {
+    display: flex; flex-wrap: wrap; gap: 8px;
+    margin-bottom: 20px; align-items: center;
+  }
+  .filter-group { display: flex; gap: 6px; flex-wrap: wrap; }
+  .filter-label {
+    font-size: .7rem; text-transform: uppercase; letter-spacing: .07em;
+    color: var(--ink-3); font-weight: 600; padding-top: 5px;
+    min-width: 50px;
+  }
+  .btn-filter {
+    font-family: 'DM Sans', sans-serif;
+    font-size: .78rem; padding: 5px 12px; border-radius: 20px;
+    border: 1.5px solid var(--border); background: white;
+    color: var(--ink-2); cursor: pointer; transition: all .15s;
+    font-weight: 500; white-space: nowrap;
+  }
+  .btn-filter:hover  { border-color: var(--accent); color: var(--accent); }
+  .btn-filter.active { background: var(--ink); border-color: var(--ink); color: white; }
+  .search-input {
+    font-family: 'DM Sans', sans-serif;
+    font-size: .82rem; padding: 6px 14px; border-radius: 20px;
+    border: 1.5px solid var(--border); background: white;
+    color: var(--ink); outline: none; min-width: 200px;
+    transition: border-color .15s;
+  }
+  .search-input:focus { border-color: var(--accent); }
+
+  /* ── SORT BAR ───────────────────────────────────── */
+  .sort-row {
+    display: flex; align-items: center; gap: 10px;
+    margin-bottom: 16px;
+  }
+  .sort-label { font-size: .72rem; color: var(--ink-3); font-weight: 500; }
+  .sort-select {
+    font-family: 'DM Sans', sans-serif; font-size: .8rem;
+    padding: 4px 10px; border-radius: var(--r); border: 1.5px solid var(--border);
+    background: white; color: var(--ink); cursor: pointer; outline: none;
+  }
+
+  /* ── PROPERTY GRID ──────────────────────────────── */
+  .prop-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 16px;
+  }
+  .prop-card {
+    background: white;
+    border: 1px solid var(--border);
+    border-radius: var(--r-lg);
+    overflow: hidden;
+    transition: transform .15s, box-shadow .15s;
+    position: relative;
+  }
+  .prop-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 24px var(--shadow);
+  }
+  .prop-card-accent {
+    height: 4px;
+    background: linear-gradient(90deg, var(--accent), var(--accent-2));
+  }
+  .prop-card-accent.green { background: linear-gradient(90deg, #2d6a4f, #52b788); }
+  .prop-card-accent.red   { background: linear-gradient(90deg, #c1121f, #e63946); }
+  .prop-card-accent.amber { background: linear-gradient(90deg, #b45309, #d97706); }
+
+  .prop-card-body { padding: 14px 16px; }
+  .prop-top {
+    display: flex; align-items: flex-start; justify-content: space-between;
+    gap: 8px; margin-bottom: 8px;
+  }
+  .prop-type-badge {
+    font-size: .65rem; padding: 3px 8px; border-radius: 4px;
+    background: var(--paper-3); color: var(--ink-2);
+    font-weight: 600; letter-spacing: .05em; text-transform: uppercase;
+    white-space: nowrap; flex-shrink: 0;
+  }
+  .prop-source {
+    font-family: 'DM Mono', monospace;
+    font-size: .65rem; color: var(--ink-3);
+  }
+  .prop-title {
+    font-size: .9rem; font-weight: 600; color: var(--ink);
+    line-height: 1.35; margin-bottom: 4px;
+    display: -webkit-box; -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical; overflow: hidden;
+  }
+  .prop-address {
+    font-size: .78rem; color: var(--ink-3);
+    display: flex; align-items: center; gap: 4px;
+    margin-bottom: 10px;
+  }
+  .prop-meta {
+    display: flex; gap: 10px; flex-wrap: wrap;
+    margin-bottom: 12px;
+  }
+  .prop-meta-item {
+    display: flex; align-items: center; gap: 4px;
+    font-size: .75rem; color: var(--ink-2);
+  }
+  .prop-meta-icon { font-size: .85rem; }
+  .prop-price-row {
+    display: flex; align-items: baseline; justify-content: space-between;
+    gap: 8px;
+  }
+  .prop-price {
+    font-family: 'DM Serif Display', serif;
+    font-size: 1.2rem; color: var(--accent);
+  }
+  .prop-ppm2 {
+    font-family: 'DM Mono', monospace;
+    font-size: .7rem; color: var(--ink-3);
+  }
+  .prop-price-change {
+    display: flex; align-items: center; gap: 4px;
+    font-size: .72rem; font-weight: 600;
+  }
+  .prop-price-change.up   { color: var(--red); }
+  .prop-price-change.down { color: var(--green); }
+
+  .prop-card-footer {
+    padding: 10px 16px;
+    background: var(--paper);
+    border-top: 1px solid var(--border);
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  .prop-age { font-size: .68rem; color: var(--ink-3); font-family: 'DM Mono', monospace; }
+  .prop-link {
+    font-size: .75rem; font-weight: 600; color: var(--accent);
+    text-decoration: none; letter-spacing: .02em;
+    display: flex; align-items: center; gap: 4px;
+    transition: color .15s;
+  }
+  .prop-link:hover { color: var(--accent-2); }
+  .badge-new {
+    position: absolute; top: 12px; right: 12px;
+    background: var(--green); color: white;
+    font-size: .6rem; padding: 2px 7px; border-radius: 20px;
+    font-weight: 700; letter-spacing: .06em; text-transform: uppercase;
+  }
+  .badge-removed {
+    position: absolute; top: 12px; right: 12px;
+    background: var(--red); color: white;
+    font-size: .6rem; padding: 2px 7px; border-radius: 20px;
+    font-weight: 700; letter-spacing: .06em; text-transform: uppercase;
+  }
+
+  /* ── SECTION SPACING ────────────────────────────── */
+  .section { margin-bottom: 48px; }
+
+  /* ── EMPTY STATE ────────────────────────────────── */
+  .empty-state {
+    text-align: center; padding: 48px 24px;
+    color: var(--ink-3); font-size: .9rem;
+    border: 2px dashed var(--border); border-radius: var(--r-lg);
+  }
+  .empty-icon { font-size: 2rem; margin-bottom: 8px; display: block; }
+
+  /* ── MARKET METER ───────────────────────────────── */
+  .meter-section {
+    background: var(--ink); color: var(--paper);
+    border-radius: var(--r-lg); padding: 24px 28px;
+    margin-bottom: 48px;
+  }
+  .meter-title {
+    font-family: 'DM Serif Display', serif;
+    font-size: 1.1rem; margin-bottom: 20px;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .meter-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; }
+  .meter-card {
+    background: rgba(255,255,255,.06); border: 1px solid rgba(255,255,255,.1);
+    border-radius: var(--r); padding: 16px;
+  }
+  .meter-card-title { font-size: .7rem; text-transform: uppercase; letter-spacing: .08em; color: #888ea0; margin-bottom: 10px; font-weight: 600; }
+  .meter-bar-wrap { background: rgba(255,255,255,.08); border-radius: 4px; height: 8px; overflow: hidden; margin-bottom: 8px; }
+  .meter-bar { height: 100%; border-radius: 4px; transition: width .6s ease; }
+  .bar-casa    { background: linear-gradient(90deg, #c2440e, #e05a1a); }
+  .bar-ph      { background: linear-gradient(90deg, #2d6a4f, #52b788); }
+  .bar-terreno { background: linear-gradient(90deg, #b45309, #d97706); }
+  .bar-galpon  { background: linear-gradient(90deg, #4a4e69, #7b7fa8); }
+  .meter-bar-label { font-family: 'DM Mono', monospace; font-size: .72rem; color: #8a8fa0; }
+
+  /* ── SOURCE CHIPS ───────────────────────────────── */
+  .sources-row { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 28px; }
+  .source-chip {
+    display: flex; align-items: center; gap: 6px;
+    background: white; border: 1px solid var(--border);
+    border-radius: var(--r); padding: 6px 12px;
+    font-size: .75rem; font-weight: 500; color: var(--ink-2);
+  }
+  .source-dot { width: 8px; height: 8px; border-radius: 50%; }
+
+  /* ── LOADING ────────────────────────────────────── */
+  .loading-overlay {
+    text-align: center; padding: 80px 24px;
+    color: var(--ink-3);
+  }
+  .spinner {
+    width: 36px; height: 36px; border: 3px solid var(--border);
+    border-top-color: var(--accent); border-radius: 50%;
+    animation: spin .8s linear infinite; margin: 0 auto 16px;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* ── FOOTER ─────────────────────────────────────── */
+  footer {
+    background: var(--ink); color: #666c80;
+    padding: 20px 24px; text-align: center;
+    font-size: .75rem; border-top: 3px solid var(--accent);
+  }
+  footer a { color: var(--accent-2); text-decoration: none; }
+  footer a:hover { text-decoration: underline; }
+
+  /* ── RESPONSIVE ─────────────────────────────────── */
+  @media (max-width: 768px) {
+    .stats-bar-inner { grid-template-columns: repeat(3, 1fr); }
+    .masthead-meta { display: none; }
+    .prop-grid { grid-template-columns: 1fr; }
+    .filters-row { gap: 6px; }
+  }
+  @media (max-width: 480px) {
+    .stats-bar-inner { grid-template-columns: repeat(2, 1fr); }
+    .stat-cell:nth-child(5), .stat-cell:nth-child(6) { display: none; }
+  }
+</style>
+</head>
+<body>
+
+<!-- ── MASTHEAD ─────────────────────────────────────────── -->
+<header class="masthead">
+  <div class="masthead-inner">
+    <div class="brand">
+      <span class="brand-dot"></span>
+      <div>
+        <div class="brand-title">Monitor <em>Inmobiliario</em></div>
+        <div class="brand-subtitle">Vicente López · Florida · La Lucila · San Isidro</div>
+      </div>
+    </div>
+    <div class="masthead-meta">
+      <div class="live-badge"><span class="live-dot"></span> En vivo</div>
+      <div id="last-update">cargando…</div>
+    </div>
+  </div>
+</header>
+
+<!-- ── STATS BAR ─────────────────────────────────────────── -->
+<div class="stats-bar">
+  <div class="stats-bar-inner">
+    <div class="stat-cell">
+      <div class="stat-value" id="stat-total">—</div>
+      <div class="stat-label">Total activas</div>
+    </div>
+    <div class="stat-cell">
+      <div class="stat-value green" id="stat-new">—</div>
+      <div class="stat-label">Nuevas hoy</div>
+    </div>
+    <div class="stat-cell">
+      <div class="stat-value red" id="stat-removed">—</div>
+      <div class="stat-label">Dadas de baja</div>
+    </div>
+    <div class="stat-cell">
+      <div class="stat-value amber" id="stat-changes">—</div>
+      <div class="stat-label">Cambios precio</div>
+    </div>
+    <div class="stat-cell">
+      <div class="stat-value" id="stat-avg-price">—</div>
+      <div class="stat-label">Precio promedio</div>
+    </div>
+    <div class="stat-cell">
+      <div class="stat-value" id="stat-ppm2">—</div>
+      <div class="stat-label">USD/m² prom.</div>
+    </div>
+  </div>
+</div>
+
+<!-- ── MAIN ─────────────────────────────────────────────── -->
+<main class="container">
+
+  <div id="loading" class="loading-overlay">
+    <div class="spinner"></div>
+    <div>Cargando propiedades…</div>
+  </div>
+
+  <div id="main-content" style="display:none">
+
+    <!-- SOURCES -->
+    <div class="sources-row" id="sources-row"></div>
+
+    <!-- MARKET METER -->
+    <div class="meter-section">
+      <div class="meter-title">📊 Termómetro del mercado</div>
+      <div class="meter-grid" id="meter-grid"></div>
+    </div>
+
+    <!-- NUEVAS HOY -->
+    <section class="section" id="sec-new">
+      <div class="section-header">
+        <div class="section-title">
+          ✦ Nuevas incorporaciones
+          <span class="section-tag tag-new">Hoy</span>
+        </div>
+        <span class="section-count" id="count-new">0 propiedades</span>
+      </div>
+      <div class="prop-grid" id="grid-new"></div>
+    </section>
+
+    <!-- CAMBIOS DE PRECIO -->
+    <section class="section" id="sec-changes">
+      <div class="section-header">
+        <div class="section-title">
+          ↕ Cambios de precio
+          <span class="section-tag tag-chg">Actualizadas</span>
+        </div>
+        <span class="section-count" id="count-changes">0 propiedades</span>
+      </div>
+      <div class="prop-grid" id="grid-changes"></div>
+    </section>
+
+    <!-- BAJAS -->
+    <section class="section" id="sec-removed">
+      <div class="section-header">
+        <div class="section-title">
+          ✕ Dadas de baja
+          <span class="section-tag tag-down">Vendidas o retiradas</span>
+        </div>
+        <span class="section-count" id="count-removed">0 propiedades</span>
+      </div>
+      <div class="prop-grid" id="grid-removed"></div>
+    </section>
+
+    <!-- TODAS LAS PROPIEDADES -->
+    <section class="section">
+      <div class="section-header">
+        <div class="section-title">
+          ▤ Todas las propiedades
+          <span class="section-tag tag-all">USD 250k – 350k</span>
+        </div>
+        <span class="section-count" id="count-all">0 propiedades</span>
+      </div>
+
+      <!-- FILTERS -->
+      <div class="filters-row">
+        <span class="filter-label">Zona</span>
+        <div class="filter-group" id="filter-zone">
+          <button class="btn-filter active" data-zone="all">Todas</button>
+          <button class="btn-filter" data-zone="Vicente López">Vte. López</button>
+          <button class="btn-filter" data-zone="Florida">Florida</button>
+          <button class="btn-filter" data-zone="La Lucila">La Lucila</button>
+          <button class="btn-filter" data-zone="San Isidro">San Isidro</button>
+        </div>
+      </div>
+      <div class="filters-row">
+        <span class="filter-label">Tipo</span>
+        <div class="filter-group" id="filter-type">
+          <button class="btn-filter active" data-type="all">Todos</button>
+          <button class="btn-filter" data-type="Casa">Casa</button>
+          <button class="btn-filter" data-type="PH">PH</button>
+          <button class="btn-filter" data-type="Terreno">Terreno</button>
+          <button class="btn-filter" data-type="Galpón">Galpón</button>
+          <button class="btn-filter" data-type="Depósito">Depósito</button>
+        </div>
+        <input class="search-input" id="search-input" type="text" placeholder="Buscar por dirección, título…" />
+      </div>
+      <div class="sort-row">
+        <span class="sort-label">Ordenar por:</span>
+        <select class="sort-select" id="sort-select">
+          <option value="price-asc">Precio: menor → mayor</option>
+          <option value="price-desc">Precio: mayor → menor</option>
+          <option value="recent">Más reciente primero</option>
+          <option value="surface">Mayor superficie</option>
+          <option value="ppm2">Menor USD/m²</option>
+        </select>
+      </div>
+
+      <div class="prop-grid" id="grid-all"></div>
+    </section>
+
+  </div><!-- /main-content -->
+</main>
+
+<footer>
+  Monitor Inmobiliario GBA Norte · Actualización diaria automática · 
+  Casas, PH, Terrenos, Galpones · USD 250.000 – 350.000 ·
+  Datos obtenidos de Zonaprop, Argenprop, MercadoLibre, Properati, Inmuebles24
+</footer>
+
+<script>
+// ── DATA ──────────────────────────────────────────────────────
+
+const SOURCE_COLORS = {
+  "Zonaprop":     "#e05a1a",
+  "Argenprop":    "#2d6a4f",
+  "MercadoLibre": "#ffe200",
+  "Properati":    "#1a3c6e",
+  "Inmuebles24":  "#7b2d8b",
+};
+
+let allData = null;
+let activeZone = "all";
+let activeType = "all";
+let searchQuery = "";
+let sortOrder = "price-asc";
+
+// ── FETCH ─────────────────────────────────────────────────────
+
+async function loadData() {
+  try {
+    const ts = Date.now();
+    const res = await fetch(`data/properties.json?t=${ts}`);
+    if (!res.ok) throw new Error("HTTP " + res.status);
+    allData = await res.json();
+    render();
+  } catch (e) {
+    document.getElementById("loading").innerHTML =
+      `<span class="empty-icon">⚠️</span>No se pudieron cargar los datos.<br>
+       <small style="color:#888">Asegurate de que el scraper haya corrido al menos una vez.</small>`;
+  }
+}
+
+// ── RENDER ────────────────────────────────────────────────────
+
+function render() {
+  document.getElementById("loading").style.display = "none";
+  document.getElementById("main-content").style.display = "block";
+
+  const s = allData.stats;
+
+  // ── Last update
+  const dt = new Date(allData.last_updated);
+  document.getElementById("last-update").textContent =
+    "Actualizado: " + dt.toLocaleString("es-AR", { dateStyle: "short", timeStyle: "short" });
+
+  // ── Stats
+  document.getElementById("stat-total").textContent    = s.total.toLocaleString();
+  document.getElementById("stat-new").textContent      = s.new_today;
+  document.getElementById("stat-removed").textContent  = s.removed_today;
+  document.getElementById("stat-changes").textContent  = s.price_changes;
+  document.getElementById("stat-avg-price").textContent =
+    s.avg_price_usd ? "USD " + s.avg_price_usd.toLocaleString() : "—";
+  document.getElementById("stat-ppm2").textContent =
+    s.avg_price_per_m2 ? "USD " + s.avg_price_per_m2.toLocaleString() : "—";
+
+  // ── Sources
+  renderSources();
+
+  // ── Market meter
+  renderMeter();
+
+  // ── Sections
+  renderSection("grid-new", "count-new", allData.new_today, "new");
+  renderSection("grid-changes", "count-changes", allData.price_changes, "change");
+  renderSection("grid-removed", "count-removed", allData.removed_today, "removed");
+
+  // ── All properties
+  renderAllProperties();
+}
+
+function renderSources() {
+  const sources = {};
+  (allData.all_properties || []).forEach(p => {
+    sources[p.source] = (sources[p.source] || 0) + 1;
+  });
+  const row = document.getElementById("sources-row");
+  row.innerHTML = Object.entries(sources).map(([name, count]) => `
+    <div class="source-chip">
+      <span class="source-dot" style="background:${SOURCE_COLORS[name] || '#888'}"></span>
+      <strong>${name}</strong> <span style="color:#aaa">${count}</span>
+    </div>`).join("");
+}
+
+function renderMeter() {
+  const props = allData.all_properties || [];
+  const byType = {};
+  props.forEach(p => {
+    byType[p.type] = (byType[p.type] || 0) + 1;
+  });
+  const max = Math.max(...Object.values(byType), 1);
+  const barClasses = { Casa: "bar-casa", PH: "bar-ph", Terreno: "bar-terreno", Galpón: "bar-galpon", Depósito: "bar-galpon" };
+
+  const grid = document.getElementById("meter-grid");
+  grid.innerHTML = Object.entries(byType).map(([type, count]) => {
+    const pct = Math.round(count / max * 100);
+    const avg = calcAvgPrice(props.filter(p => p.type === type));
+    return `
+    <div class="meter-card">
+      <div class="meter-card-title">${type}</div>
+      <div class="meter-bar-wrap">
+        <div class="meter-bar ${barClasses[type] || 'bar-galpon'}" style="width:${pct}%"></div>
+      </div>
+      <div class="meter-bar-label">${count} propiedades · ${avg ? "USD " + avg.toLocaleString() : "—"} prom.</div>
+    </div>`;
+  }).join("");
+
+  // Why it matters
+  grid.innerHTML += `
+    <div class="meter-card" style="grid-column: 1/-1;">
+      <div class="meter-card-title">📌 ¿Por qué importa esto?</div>
+      <div style="font-size:.8rem;color:#b0b4c0;line-height:1.6">
+        Las propiedades que desaparecen de los portales indican movimiento real del mercado: se vendieron, se alquilaron o se retiraron. 
+        Este seguimiento diario permite calcular la <strong style="color:#e0e4f0">velocidad de absorción</strong> 
+        (cuánto tarda en venderse cada tipo de propiedad) y entender qué inmueble tiene más demanda en la zona.
+      </div>
+    </div>`;
+}
+
+function calcAvgPrice(props) {
+  const prices = props.map(p => p.price_usd).filter(Boolean);
+  return prices.length ? Math.round(prices.reduce((a, b) => a + b, 0) / prices.length) : null;
+}
+
+function renderSection(gridId, countId, props, variant) {
+  document.getElementById(countId).textContent = `${props.length} propiedad${props.length !== 1 ? "es" : ""}`;
+  const grid = document.getElementById(gridId);
+  if (!props.length) {
+    grid.innerHTML = `<div class="empty-state" style="grid-column:1/-1">
+      <span class="empty-icon">${variant === "new" ? "🏡" : variant === "removed" ? "📋" : "💰"}</span>
+      Sin novedades hoy
+    </div>`;
+    return;
+  }
+  grid.innerHTML = props.map(p => propCard(p, variant)).join("");
+}
+
+function renderAllProperties() {
+  let props = [...(allData.all_properties || [])];
+
+  // Filter
+  if (activeZone !== "all") props = props.filter(p => p.zone === activeZone);
+  if (activeType !== "all") props = props.filter(p => p.type === activeType);
+  if (searchQuery) {
+    const q = searchQuery.toLowerCase();
+    props = props.filter(p =>
+      (p.title || "").toLowerCase().includes(q) ||
+      (p.address || "").toLowerCase().includes(q) ||
+      (p.zone || "").toLowerCase().includes(q)
+    );
+  }
+
+  // Sort
+  props.sort((a, b) => {
+    if (sortOrder === "price-asc")  return (a.price_usd || 0) - (b.price_usd || 0);
+    if (sortOrder === "price-desc") return (b.price_usd || 0) - (a.price_usd || 0);
+    if (sortOrder === "recent")     return new Date(b.first_seen) - new Date(a.first_seen);
+    if (sortOrder === "surface")    return (b.surface_m2 || 0) - (a.surface_m2 || 0);
+    if (sortOrder === "ppm2") {
+      const aPpm = a.price_usd && a.surface_m2 ? a.price_usd / a.surface_m2 : 9999999;
+      const bPpm = b.price_usd && b.surface_m2 ? b.price_usd / b.surface_m2 : 9999999;
+      return aPpm - bPpm;
+    }
+    return 0;
+  });
+
+  document.getElementById("count-all").textContent = `${props.length} propiedad${props.length !== 1 ? "es" : ""}`;
+
+  const grid = document.getElementById("grid-all");
+  if (!props.length) {
+    grid.innerHTML = `<div class="empty-state" style="grid-column:1/-1">
+      <span class="empty-icon">🔍</span>No hay resultados con los filtros seleccionados.
+    </div>`;
+    return;
+  }
+  grid.innerHTML = props.map(p => propCard(p, "all")).join("");
+}
+
+// ── CARD TEMPLATE ─────────────────────────────────────────────
+
+function propCard(p, variant) {
+  const priceStr = p.price_usd ? "USD " + p.price_usd.toLocaleString("es-AR") : "Consultar";
+  const ppm2 = (p.price_usd && p.surface_m2 && p.surface_m2 > 0)
+    ? Math.round(p.price_usd / p.surface_m2).toLocaleString()
+    : null;
+  const accentClass = variant === "new" ? "green" : variant === "removed" ? "red" : variant === "change" ? "amber" : "";
+  const badge = variant === "new"
+    ? '<span class="badge-new">NUEVA</span>'
+    : variant === "removed"
+    ? '<span class="badge-removed">BAJA</span>'
+    : "";
+
+  const ageText = daysAgo(p.first_seen);
+
+  let priceChangeHtml = "";
+  if (variant === "change" && p.old_price_usd) {
+    const dir = p.price_usd > p.old_price_usd ? "up" : "down";
+    const arrow = dir === "up" ? "↑" : "↓";
+    priceChangeHtml = `<div class="prop-price-change ${dir}">${arrow} ${Math.abs(p.price_change_pct)}% vs USD ${p.old_price_usd.toLocaleString()}</div>`;
+  }
+
+  return `
+  <div class="prop-card">
+    <div class="prop-card-accent ${accentClass}"></div>
+    ${badge}
+    <div class="prop-card-body">
+      <div class="prop-top">
+        <span class="prop-type-badge">${p.type || "Propiedad"}</span>
+        <span class="prop-source">${p.source}</span>
+      </div>
+      <div class="prop-title">${p.title || "Propiedad en " + p.zone}</div>
+      <div class="prop-address">📍 ${p.address || p.zone}</div>
+      <div class="prop-meta">
+        ${p.surface_m2 ? `<div class="prop-meta-item"><span class="prop-meta-icon">📐</span>${p.surface_m2} m²</div>` : ""}
+        ${p.rooms ? `<div class="prop-meta-item"><span class="prop-meta-icon">🛏</span>${p.rooms}</div>` : ""}
+        <div class="prop-meta-item"><span class="prop-meta-icon">📍</span>${p.zone}</div>
+      </div>
+      <div class="prop-price-row">
+        <span class="prop-price">${priceStr}</span>
+        ${ppm2 ? `<span class="prop-ppm2">USD ${ppm2}/m²</span>` : ""}
+      </div>
+      ${priceChangeHtml}
+    </div>
+    <div class="prop-card-footer">
+      <span class="prop-age">${ageText}</span>
+      <a class="prop-link" href="${p.url || "#"}" target="_blank" rel="noopener">
+        Ver aviso ↗
+      </a>
+    </div>
+  </div>`;
+}
+
+function daysAgo(isoDate) {
+  if (!isoDate) return "—";
+  const diff = Date.now() - new Date(isoDate);
+  const days = Math.floor(diff / 86400000);
+  if (days === 0) return "Hoy";
+  if (days === 1) return "Ayer";
+  return `Hace ${days} días`;
+}
+
+// ── FILTERS ───────────────────────────────────────────────────
+
+document.querySelectorAll("[data-zone]").forEach(btn => {
+  btn.addEventListener("click", () => {
+    document.querySelectorAll("[data-zone]").forEach(b => b.classList.remove("active"));
+    btn.classList.add("active");
+    activeZone = btn.dataset.zone;
+    renderAllProperties();
+  });
+});
+
+document.querySelectorAll("[data-type]").forEach(btn => {
+  btn.addEventListener("click", () => {
+    document.querySelectorAll("[data-type]").forEach(b => b.classList.remove("active"));
+    btn.classList.add("active");
+    activeType = btn.dataset.type;
+    renderAllProperties();
+  });
+});
+
+document.getElementById("search-input").addEventListener("input", e => {
+  searchQuery = e.target.value;
+  renderAllProperties();
+});
+
+document.getElementById("sort-select").addEventListener("change", e => {
+  sortOrder = e.target.value;
+  renderAllProperties();
+});
+
+// ── INIT ──────────────────────────────────────────────────────
+loadData();
+</script>
+</body>
+</html>
