@@ -1,0 +1,5 @@
+[
+  { "barrio": "Centro", "precio": 1000, "ambientes": 2 },
+  { "barrio": "Norte", "precio": 1200, "ambientes": 3 },
+  { "barrio": "Sur", "precio": 800, "ambientes": 1 }
+]
