@@ -2,9 +2,8 @@ name: Daily Scraping — Monitor Inmobiliario
 
 on:
   schedule:
-    # Runs every day at 8:00 AM Argentina time (UTC-3 → 11:00 UTC)
-    - cron: "0 11 * * *"
-  workflow_dispatch: # Allow manual trigger from GitHub UI
+    - cron: "0 11 * * *"  # 8:00 AM Argentina (UTC-3)
+  workflow_dispatch:
 
 permissions:
   contents: write
@@ -26,16 +25,17 @@ jobs:
           python-version: "3.11"
 
       - name: Install dependencies
-        run: |
-          pip install requests beautifulsoup4 lxml
+        run: pip install requests beautifulsoup4 lxml
 
       - name: Run scraper
+        env:
+          SCRAPER_API_KEY: ${{ secrets.SCRAPER_API_KEY }}
         run: python scraper.py
 
       - name: Commit updated data
         run: |
           git config --local user.email "monitor-bot@github.com"
-          git config --local user.name "Monitor Inmobiliario Bot"
+          git config --local user.name "Monitor Bot"
           git add data/properties.json
           git diff --staged --quiet || git commit -m "🏠 Update: $(date +'%Y-%m-%d %H:%M') ART"
           git push
