@@ -25,7 +25,7 @@ log = logging.getLogger(__name__)
 
 PRICE_MIN = 250000
 PRICE_MAX = 350000
-DATA_FILE = Path(__file__).parent.parent / "data" / "properties.json"
+DATA_FILE = Path(__file__).parent / "data" / "properties.json"
 
 SCRAPER_API_KEY = os.environ.get("SCRAPER_API_KEY", "72404a3277533db7d13a93c6b44bb00f")
 
